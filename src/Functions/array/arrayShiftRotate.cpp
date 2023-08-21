@@ -285,7 +285,8 @@ using FunctionArrayRotateRight = FunctionArrayShiftRotate<ArrayRotateRightImpl, 
 
 REGISTER_FUNCTION(ArrayShiftOrRotate)
 {
-    factory.registerFunction<FunctionArrayRotateLeft>(FunctionDocumentation{
+    factory.registerFunction<FunctionArrayRotateLeft>(
+        FunctionDocumentation{
         .description = R"(
 Returns an array of the same size as the original array with elements rotated
 to the left by the specified number of positions.
@@ -312,7 +313,8 @@ value of the rotation.
         },
         .categories = {"Array"},
     });
-    factory.registerFunction<FunctionArrayRotateRight>(FunctionDocumentation{
+    factory.registerFunction<FunctionArrayRotateRight>(
+        FunctionDocumentation{
         .description = R"(
 Returns an array of the same size as the original array with elements rotated
 to the right by the specified number of positions.
@@ -338,7 +340,8 @@ value of the rotation.
         },
         .categories = {"Array"},
     });
-    factory.registerFunction<FunctionArrayShiftLeft>(FunctionDocumentation{
+    factory.registerFunction<FunctionArrayShiftLeft>(
+        FunctionDocumentation{
         .description = R"(
 Returns an array of the same size as the original array with elements shifted
 to the left by the specified number of positions. New elements are filled with
@@ -375,7 +378,8 @@ The default value must be of the same type as the array elements.
         },
         .categories = {"Array"},
     });
-    factory.registerFunction<FunctionArrayShiftRight>(FunctionDocumentation{
+    factory.registerFunction<FunctionArrayShiftRight>(
+        FunctionDocumentation{
         .description = R"(
 Returns an array of the same size as the original array with elements shifted
 to the right by the specified number of positions. New elements are filled with
