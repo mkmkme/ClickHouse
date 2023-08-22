@@ -9,6 +9,8 @@
 
 #include "config.h"
 
+#include <iostream>
+
 
 class SipHash;
 class Collator;
@@ -176,6 +178,7 @@ public:
     /// Appends one element from other column with the same type multiple times.
     virtual void insertManyFrom(const IColumn & src, size_t position, size_t length)
     {
+        std::cout << "insertManyFrom: position = " << position << ", length = " << length << std::endl;
         for (size_t i = 0; i < length; ++i)
             insertFrom(src, position);
     }

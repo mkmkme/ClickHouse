@@ -27,41 +27,6 @@ enum class ShiftRotateDirection : uint8_t
     Right
 };
 
-/// A helper structure for storing either a constant value or a full column and working with it.
-/// Useful for dealing with 'shift number' and 'default value' columns.
-struct ConstOrColumn
-{
-    ConstOrColumn() = default;
-    explicit ConstOrColumn(ColumnPtr src) { init(src); }
-
-    void init(ColumnPtr src)
-    {
-        if (isColumnConst(*src))
-            const_value = (*src)[0];
-        else
-            column = src;
-    }
-
-    Int64 getInt(size_t idx) const
-    {
-        if (column)
-            return column->getInt(idx);
-        else
-            return const_value.get<Int64>();
-    }
-
-    void insertManyToColumn(IColumn & dst, size_t row_num, size_t length) const
-    {
-        if (column)
-            dst.insertManyFrom(*column, row_num, length);
-        else
-            dst.insertMany(const_value, length);
-    }
-
-    Field const_value;
-    ColumnPtr column;
-};
-
 template <typename Impl, typename Name>
 class FunctionArrayShiftRotate : public IFunction
 {
@@ -136,23 +101,23 @@ public:
             column_array = assert_cast<const ColumnArray *>(column_array_ptr.get());
         }
 
-        ConstOrColumn shift_num_const_or_column(arguments[1].column);
+        ColumnPtr shift_num_column = arguments[1].column;
 
         if constexpr (strategy == ShiftRotateStrategy::Shift)
         {
-            ConstOrColumn default_const_or_column{};
+            ColumnPtr default_column;
             const auto elem_type = static_cast<const DataTypeArray &>(*result_type).getNestedType();
 
             if (arguments.size() == 3)
-                default_const_or_column.init(arguments[2].column);
+                default_column = arguments[2].column;
             else
-                default_const_or_column.const_value = elem_type->getDefault();
+                default_column = elem_type->createColumnConstWithDefaultValue(input_rows_count);
 
-            return Impl::execute(*column_array, std::move(shift_num_const_or_column), std::move(default_const_or_column), input_rows_count);
+            return Impl::execute(*column_array, shift_num_column, default_column, input_rows_count);
         }
         else
         {
-            return Impl::execute(*column_array, std::move(shift_num_const_or_column), input_rows_count);
+            return Impl::execute(*column_array, shift_num_column, input_rows_count);
         }
     }
 };
@@ -161,7 +126,7 @@ template <ShiftRotateDirection direction>
 struct ArrayRotateImpl
 {
     static constexpr ShiftRotateStrategy strategy = ShiftRotateStrategy::Rotate;
-    static ColumnPtr execute(const ColumnArray & array, ConstOrColumn shift_num, size_t input_rows_count)
+    static ColumnPtr execute(const ColumnArray & array, ColumnPtr shift_num, size_t input_rows_count)
     {
         size_t batch_size = array.getData().size();
 
@@ -173,7 +138,7 @@ struct ArrayRotateImpl
         {
             const size_t offset = offsets[i];
             const size_t nested_size = offset - current_offset;
-            Int64 shift_num_value = shift_num.getInt(i);
+            Int64 shift_num_value = shift_num->getInt(i);
 
             // Rotating left to -N is the same as rotating right to N.
             ShiftRotateDirection actual_direction = direction;
@@ -205,7 +170,7 @@ struct ArrayShiftImpl
     static constexpr ShiftRotateStrategy strategy = ShiftRotateStrategy::Shift;
 
     static ColumnPtr
-    execute(const ColumnArray & array, ConstOrColumn shift_const_or_column, ConstOrColumn default_const_or_column, size_t input_column_rows)
+    execute(const ColumnArray & array, ColumnPtr shift_column, ColumnPtr default_column, size_t input_column_rows)
     {
         const IColumn::Offsets & offsets = array.getOffsets();
         const IColumn & array_data = array.getData();
@@ -219,7 +184,10 @@ struct ArrayShiftImpl
         {
             const size_t offset = offsets[i];
             const size_t nested_size = offset - current_offset;
-            Int64 shift_num_value = shift_const_or_column.getInt(i);
+            Int64 shift_num_value = shift_column->getInt(i);
+
+            std::cout << "shift_num_value: " << shift_num_value << std::endl;
+            std::cout << "nested_size: " << nested_size << std::endl;
 
             // Shifting left to -N is the same as shifting right to N.
             ShiftRotateDirection actual_direction = direction;
@@ -232,19 +200,30 @@ struct ArrayShiftImpl
             const size_t number_of_default_values = std::min(static_cast<size_t>(shift_num_value), nested_size);
             const size_t num_of_original_values = nested_size - number_of_default_values;
 
+            std::cout << "number_of_default_values: " << number_of_default_values << std::endl;
+            std::cout << "num_of_original_values: " << num_of_original_values << std::endl;
+
             if (actual_direction == ShiftRotateDirection::Right)
             {
-                default_const_or_column.insertManyToColumn(*result_column, i, number_of_default_values);
+                result_column->insertManyFrom(*default_column, i, number_of_default_values);
                 result_column->insertRangeFrom(array_data, current_offset, num_of_original_values);
             }
             else
             {
+                std::cout << "Beep\n";
                 result_column->insertRangeFrom(array_data, current_offset + number_of_default_values, num_of_original_values);
-                default_const_or_column.insertManyToColumn(*result_column, i, number_of_default_values);
+                std::cout << "Boop\n";
+                std::cout << "default_column->size(): " << default_column->size() << std::endl;
+                std::cout << default_column->dumpStructure() << std::endl;
+                std::cout << "i: " << i << std::endl;
+                result_column->insertManyFrom(*default_column, i, number_of_default_values);
+                std::cout << "Splat\n";
             }
 
             current_offset = offset;
         }
+
+        std::cout << "result_column->size(): " << result_column->size() << std::endl;
 
         return ColumnArray::create(std::move(result_column), array.getOffsetsPtr());
     }

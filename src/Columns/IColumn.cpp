@@ -31,6 +31,7 @@ String IColumn::dumpStructure() const
 
 void IColumn::insertFrom(const IColumn & src, size_t n)
 {
+    std::cout << "IColumn::insertFrom: " << n << std::endl;
     insert(src[n]);
 }
 

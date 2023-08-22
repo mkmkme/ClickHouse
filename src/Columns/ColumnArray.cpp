@@ -300,6 +300,7 @@ void ColumnArray::insert(const Field & x)
 {
     const Array & array = x.get<const Array &>();
     size_t size = array.size();
+    std::cout << "ARRAY size: " << size << std::endl;
     for (size_t i = 0; i < size; ++i)
         getData().insert(array[i]);
     getOffsets().push_back(getOffsets().back() + size);
@@ -311,6 +312,9 @@ void ColumnArray::insertFrom(const IColumn & src_, size_t n)
     const ColumnArray & src = assert_cast<const ColumnArray &>(src_);
     size_t size = src.sizeAt(n);
     size_t offset = src.offsetAt(n);
+
+    std::cout << "ARRAY size: " << size << std::endl;
+    std::cout << "ARRAY offset: " << offset << std::endl;
 
     getData().insertRangeFrom(src.getData(), offset, size);
     getOffsets().push_back(getOffsets().back() + size);
