@@ -657,7 +657,7 @@ try
     registerTableFunctions();
     registerStorages();
     registerDictionaries();
-    registerDisks(/* global_skip_access_check= */ false, /* allow_vfs */ false);
+    registerDisks(/* global_skip_access_check= */ false, /* allow_vfs */ true);
     registerFormats();
     registerRemoteFileMetadatas();
     registerSchedulerNodes();

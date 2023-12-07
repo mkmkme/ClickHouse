@@ -94,9 +94,12 @@ private:
 
 }
 
-void registerDiskS3(DiskFactory & factory, bool global_skip_access_check, bool /* allow_vfs */ /* ToDo: convert to flags*/)
+void registerDiskS3(DiskFactory & factory,
+    bool global_skip_access_check,
+    bool allow_vfs /* ToDo: convert to flags*/,
+    bool allow_vfs_gc)
 {
-  auto creator = [global_skip_access_check](
+    auto creator = [global_skip_access_check, allow_vfs, allow_vfs_gc](
         const String & name,
         const Poco::Util::AbstractConfiguration & config,
         const String & config_prefix,
@@ -167,7 +170,7 @@ void registerDiskS3(DiskFactory & factory, bool global_skip_access_check, bool /
 #ifndef CLICKHOUSE_KEEPER_STANDALONE_BUILD
         // TODO myrrc need to sync default value of setting in MergeTreeSettings and here
         constexpr auto key = "merge_tree.allow_object_storage_vfs";
-        const bool s3_enable_disk_vfs = config.getBool(key, false);
+        const bool s3_enable_disk_vfs = allow_vfs && config.getBool(key, false);
         if (s3_enable_disk_vfs) chassert(type == "s3");
 
         /// TODO myrrc this disables zero-copy replication for all disks, not sure whether
@@ -185,7 +188,8 @@ void registerDiskS3(DiskFactory & factory, bool global_skip_access_check, bool /
                 std::move(s3_storage),
                 config,
                 config_prefix,
-                context->getZooKeeper());
+                context->getZooKeeper(),
+                allow_vfs_gc);
 
             disk->startup(context, skip_access_check);
             return disk;
