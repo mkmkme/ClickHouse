@@ -53,7 +53,6 @@ namespace ErrorCodes
 {
     extern const int NO_COLUMNS_SERIALIZED_TO_PROTOBUF_FIELDS;
     extern const int MULTIPLE_COLUMNS_SERIALIZED_TO_SAME_PROTOBUF_FIELD;
-    extern const int NO_COLUMN_SERIALIZED_TO_REQUIRED_PROTOBUF_FIELD;
     extern const int DATA_TYPE_INCOMPATIBLE_WITH_PROTOBUF_FIELD;
     extern const int PROTOBUF_FIELD_NOT_REPEATED;
     extern const int PROTOBUF_BAD_CAST;
