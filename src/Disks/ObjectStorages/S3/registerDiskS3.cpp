@@ -219,6 +219,9 @@ void registerDiskS3(DiskFactory & factory,
 
 #else
 
-void registerDiskS3(DB::DiskFactory &, bool /* global_skip_access_check */) {}
+void registerDiskS3(DB::DiskFactory &,
+    bool /* global_skip_access_check */,
+    bool /* allow_vfs */,
+    bool /* allow_vfs_gc */) {}
 
 #endif

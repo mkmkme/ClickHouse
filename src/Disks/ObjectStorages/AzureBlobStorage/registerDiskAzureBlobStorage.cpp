@@ -9,21 +9,28 @@
 
 #include <Disks/ObjectStorages/AzureBlobStorage/AzureBlobStorageAuth.h>
 #include <Disks/ObjectStorages/AzureBlobStorage/AzureObjectStorage.h>
+#include <Disks/ObjectStorages/DiskObjectStorageVFS.h>
 #include <Disks/ObjectStorages/MetadataStorageFromDisk.h>
 #include <Interpreters/Context.h>
 
 namespace DB
 {
 
-void registerDiskAzureBlobStorage(DiskFactory & factory, bool global_skip_access_check)
+void registerDiskAzureBlobStorage(DiskFactory & factory,
+    bool global_skip_access_check,
+    bool allow_vfs, // TODO: these should be converted to flags
+    bool allow_vfs_gc)
 {
-    auto creator = [global_skip_access_check](
+    auto creator = [global_skip_access_check, allow_vfs, allow_vfs_gc](
         const String & name,
         const Poco::Util::AbstractConfiguration & config,
         const String & config_prefix,
         ContextPtr context,
-        const DisksMap & /*map*/)
+        const DisksMap & /*map*/) -> DiskPtr
     {
+        (void)allow_vfs;
+        (void)allow_vfs_gc;
+
         auto [metadata_path, metadata_disk] = prepareForLocalMetadata(name, config, config_prefix, context);
 
         ObjectStoragePtr azure_object_storage = std::make_unique<AzureObjectStorage>(
@@ -33,6 +40,26 @@ void registerDiskAzureBlobStorage(DiskFactory & factory, bool global_skip_access
 
         String key_prefix;
         auto metadata_storage = std::make_shared<MetadataStorageFromDisk>(metadata_disk, key_prefix);
+
+#ifndef CLICKHOUSE_KEEPER_STANDALONE_BUILD
+        constexpr auto key = "merge_tree.allow_object_storage_vfs";
+        const bool enable_disk_vfs = allow_vfs && config.getBool(key, false);
+        if (enable_disk_vfs)
+        {
+            auto disk = std::make_shared<DiskObjectStorageVFS>(
+                name,
+                key_prefix,
+                "DiskAzureBlobStorageVFS",
+                std::move(metadata_storage),
+                std::move(azure_object_storage),
+                config,
+                config_prefix,
+                allow_vfs_gc);
+
+            disk->startup(context, global_skip_access_check);
+            return disk;
+        }
+#endif
 
         std::shared_ptr<IDisk> azure_blob_storage_disk = std::make_shared<DiskObjectStorage>(
             name,
@@ -60,7 +87,10 @@ void registerDiskAzureBlobStorage(DiskFactory & factory, bool global_skip_access
 namespace DB
 {
 
-void registerDiskAzureBlobStorage(DiskFactory &, bool /* global_skip_access_check */) {}
+void registerDiskAzureBlobStorage(DiskFactory &,
+    bool /* global_skip_access_check */,
+    bool /* allow_vfs */,
+    bool /* allow_vfs_gc */) {}
 
 }
 

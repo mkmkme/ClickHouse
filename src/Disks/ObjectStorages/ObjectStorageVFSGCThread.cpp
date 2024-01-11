@@ -2,6 +2,8 @@
 #include "Compression/CompressedReadBuffer.h"
 #include "Compression/CompressedWriteBuffer.h"
 #include "DiskObjectStorageVFS.h"
+#include "Disks/ObjectStorages/AzureBlobStorage/AzureObjectStorage.h"
+#include "Disks/ObjectStorages/S3/S3ObjectStorage.h"
 #include "IO/ReadBufferFromEmptyFile.h"
 #include "IO/ReadHelpers.h"
 
@@ -148,7 +150,12 @@ String ObjectStorageVFSGCThread::getNode(size_t id) const
 
 StoredObject ObjectStorageVFSGCThread::getSnapshotObject(size_t logpointer) const
 {
+    /// TODO mkmkme come up with something better than dynamic_cast
     /// TODO myrrc this works only for S3ObjectStorage. Must also recheck encrypted disk replication
-    return StoredObject{ObjectStorageKey::createAsRelative(storage.object_key_prefix, fmt::format("vfs/_{}", logpointer)).serialize()};
+    if (dynamic_cast<S3ObjectStorage *>(storage.object_storage.get()) != nullptr)
+        return StoredObject{ObjectStorageKey::createAsRelative(storage.object_key_prefix, fmt::format("vfs/_{}", logpointer)).serialize()};
+    if (dynamic_cast<AzureObjectStorage *>(storage.object_storage.get()) != nullptr)
+        return StoredObject{ObjectStorageKey::createAsRelative(storage.object_key_prefix, fmt::format("vfs_{}", logpointer)).serialize()};
+    throw Exception(ErrorCodes::LOGICAL_ERROR, "Unsupported object storage type");
 }
 }
