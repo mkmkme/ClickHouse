@@ -139,7 +139,10 @@ namespace
             return false;
         if (google_wrappers_special_treatment && isGoogleWrapperField(field_descriptor))
             return false;
-        return field_descriptor.message_type() || field_descriptor.has_presence();
+        return true;
+        // return field_descriptor.has_presence();
+        // return field_descriptor.message_type();
+        // return field_descriptor.message_type() || field_descriptor.has_presence();
     }
 
     // Should we pack repeated values while storing them.
@@ -169,7 +172,8 @@ namespace
         }
         if (field_descriptor.options().has_packed())
             return field_descriptor.options().packed();
-        return field_descriptor.is_packed();
+        return true;
+        // return field_descriptor.is_packed();
     }
 
     WriteBuffer & writeIndent(WriteBuffer & out, size_t size) { return out << String(size * 4, ' '); }
