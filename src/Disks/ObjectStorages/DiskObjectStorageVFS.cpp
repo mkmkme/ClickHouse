@@ -1,5 +1,7 @@
 #include "DiskObjectStorageVFS.h"
 #include "DiskObjectStorageVFSTransaction.h"
+#include "Disks/ObjectStorages/AzureBlobStorage/AzureObjectStorage.h"
+#include "Disks/ObjectStorages/S3/S3ObjectStorage.h"
 #include "IO/S3Common.h"
 #include "Interpreters/Context.h"
 #include "ObjectStorageVFSGCThread.h"
@@ -185,7 +187,13 @@ StoredObject DiskObjectStorageVFS::getMetadataObject(std::string_view remote) co
 {
     // TODO myrrc this works only for S3. Must also recheck encrypted disk replication
     // We must include disk name as two disks with different names might use same object storage bucket
-    String remote_key = fmt::format("vfs/_{}_{}", name, remote);
+    String remote_key;
+    if (dynamic_cast<S3ObjectStorage *>(object_storage.get()))
+        remote_key = fmt::format("vfs/_{}_{}", name, remote);
+    else if (dynamic_cast<AzureObjectStorage *>(object_storage.get()))
+        remote_key = fmt::format("vfs_{}_{}", name, remote);
+    else
+        throw Exception(ErrorCodes::LOGICAL_ERROR, "VFS is not supported for {}", object_storage->getName());
     return StoredObject{ObjectStorageKey::createAsRelative(object_key_prefix, std::move(remote_key)).serialize()};
 }
 }

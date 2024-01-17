@@ -14,7 +14,7 @@ void registerDiskS3(DiskFactory & factory, bool global_skip_access_check, bool a
 #endif
 
 #if USE_AZURE_BLOB_STORAGE
-void registerDiskAzureBlobStorage(DiskFactory & factory, bool global_skip_access_check);
+void registerDiskAzureBlobStorage(DiskFactory & factory, bool global_skip_access_check, bool allow_vfs, bool allow_vfs_gc);
 #endif
 
 #if USE_SSL
@@ -48,7 +48,7 @@ void registerDisks(
 #endif
 
 #if USE_AZURE_BLOB_STORAGE
-    registerDiskAzureBlobStorage(factory, global_skip_access_check);
+    registerDiskAzureBlobStorage(factory, global_skip_access_check, allow_vfs, allow_vfs_gc);
 #endif
 
 #if USE_SSL

@@ -3,6 +3,7 @@ import pytest
 from helpers.cluster import ClickHouseCluster
 from test_storage_azure_blob_storage.test import azure_query
 import os
+import time
 
 
 logging.getLogger().setLevel(logging.INFO)
@@ -118,6 +119,15 @@ def get_large_objects_count(blob_container_client, large_size_threshold=100):
     )
 
 
+def wait_for_large_objects_count(blob_container_client, expected, size=100, timeout=30):
+    while timeout > 0:
+        if get_large_objects_count(blob_container_client, large_size_threshold=size) == expected:
+            return
+        timeout -= 1
+        time.sleep(1)
+    assert get_large_objects_count(blob_container_client, large_size_threshold=size) == expected
+
+
 def test_zero_copy_replication(started_cluster):
     cluster, testing_vfs = started_cluster
     node1 = cluster.instances[NODE1]
@@ -144,7 +154,7 @@ def test_zero_copy_replication(started_cluster):
 
     # Based on version 21.x - should be only one file with size 100+ (checksums.txt), used by both nodes
     # if testing vfs, the extra file is snapshot
-    assert get_large_objects_count(blob_container_client) == 1 + testing_vfs
+    wait_for_large_objects_count(blob_container_client, 1 + testing_vfs)
 
     azure_query(node2, f"INSERT INTO {TABLE_NAME} VALUES {values2}")
     node1.query(f"SYSTEM SYNC REPLICA {TABLE_NAME}")
@@ -158,5 +168,5 @@ def test_zero_copy_replication(started_cluster):
         == values1 + "," + values2
     )
 
-    assert get_large_objects_count(blob_container_client) == 2 + testing_vfs
+    wait_for_large_objects_count(blob_container_client, 2 + testing_vfs)
     node1.query(drop_table_statement)
