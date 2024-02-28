@@ -28,6 +28,7 @@ struct VFSLogItem : VFSLogItemStorage
     static String getSerialised(StoredObjects && link, StoredObjects && unlink);
 
     void merge(VFSLogItem && other);
+    void merge(StoredObjects && link, StoredObjects && unlink);
     VFSMergeResult mergeWithSnapshot(ReadBuffer & snapshot, WriteBuffer & new_snapshot, Poco::Logger * log) &&;
 };
 }

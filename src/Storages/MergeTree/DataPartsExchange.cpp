@@ -954,6 +954,7 @@ void Fetcher::downloadBaseOrProjectionPartToDisk(
     }
 }
 
+// TODO mkmkme guard
 MergeTreeData::MutableDataPartPtr Fetcher::downloadPartToDisk(
     const String & part_name,
     const String & replica_path,
@@ -974,6 +975,9 @@ MergeTreeData::MutableDataPartPtr Fetcher::downloadPartToDisk(
     LOG_TRACE(log, "Downloading part {} using disk feature {}", part_name, feature);
     using enum RemoteDiskFeature;
     zkutil::EphemeralNodeHolderPtr zero_copy_temporary_lock_holder;
+    // TODO: (mkmkme) if feature == vfs
+    // FIXME: (mkmkme) so if feature == vfs we should create the guard with the
+    // lifetime of the function. std::optional?
     if (feature == Zerocopy)
     {
         readStringBinary(part_id, in);

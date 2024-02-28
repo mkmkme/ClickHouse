@@ -1,5 +1,6 @@
 #pragma once
 #include "DiskObjectStorageTransaction.h"
+#include "Disks/ObjectStorages/VFSLogItem.h"
 
 namespace DB
 {
@@ -15,6 +16,8 @@ struct DiskObjectStorageVFSTransaction : public DiskObjectStorageTransaction
         const String & to_file_path,
         const ReadSettings & read_settings,
         const WriteSettings & write_settings) override;
+
+    void commit() override;
 
     std::unique_ptr<WriteBufferFromFileBase>
     writeFile(const String & path, size_t buf_size, WriteMode mode, const WriteSettings & settings, bool autocommit) override;
@@ -37,6 +40,7 @@ struct DiskObjectStorageVFSTransaction : public DiskObjectStorageTransaction
 
 protected:
     DiskObjectStorageVFS & disk;
+    VFSLogItem log_item;
 
     void addStoredObjectsOp(StoredObjects && link, StoredObjects && unlink);
 };

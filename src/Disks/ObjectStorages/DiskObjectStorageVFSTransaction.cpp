@@ -58,6 +58,7 @@ struct RemoveRecursiveObjectStorageVFSOperation final : RemoveRecursiveObjectSto
 
     void execute(MetadataTransactionPtr tx) override
     {
+        LOG_TRACE(disk.log, "{}", __PRETTY_FUNCTION__);
         RemoveRecursiveObjectStorageOperation::execute(tx);
 
         StoredObjects unlink;
@@ -65,7 +66,7 @@ struct RemoveRecursiveObjectStorageVFSOperation final : RemoveRecursiveObjectSto
             std::ranges::move(unlink_by_path.objects, std::back_inserter(unlink));
 
         const String entry = VFSLogItem::getSerialised({}, std::move(unlink));
-        LOG_TRACE(disk.log, "{}: Executing {}", getInfoForLog(), entry);
+        LOG_TRACE(disk.log, "{}: Executing(RemoveRecursiveObjectStorageVFSOperation) {}", getInfoForLog(), entry);
 
         disk.zookeeper()->create(disk.nodes.log_item, entry, pers_seq);
     }
@@ -93,6 +94,7 @@ struct RemoveManyObjectStorageVFSOperation final : RemoveManyObjectStorageOperat
 
     void execute(MetadataTransactionPtr tx) override
     {
+        LOG_TRACE(disk.log, "{}", __PRETTY_FUNCTION__);
         RemoveManyObjectStorageOperation::execute(tx);
 
         StoredObjects unlink;
@@ -100,7 +102,7 @@ struct RemoveManyObjectStorageVFSOperation final : RemoveManyObjectStorageOperat
             std::ranges::move(objects, std::back_inserter(unlink));
 
         const String entry = VFSLogItem::getSerialised({}, std::move(unlink));
-        LOG_TRACE(disk.log, "{}: Executing {}", getInfoForLog(), entry);
+        LOG_TRACE(disk.log, "{}: Executing(RemoveManyObjectStorageVFSOperation) {}", getInfoForLog(), entry);
 
         disk.zookeeper()->create(disk.nodes.log_item, entry, pers_seq);
     }
@@ -187,10 +189,11 @@ struct CopyFileObjectStorageVFSOperation final : CopyFileObjectStorageOperation
 
     void execute(MetadataTransactionPtr tx) override
     {
+        LOG_TRACE(disk.log, "{}", __PRETTY_FUNCTION__);
         CopyFileObjectStorageOperation::execute(tx);
 
         const String entry = VFSLogItem::getSerialised(std::move(created_objects), {});
-        LOG_TRACE(disk.log, "{}: Executing {}", getInfoForLog(), entry);
+        LOG_TRACE(disk.log, "{}: Executing(CopyFileObjectStorageVFSOperation) {}", getInfoForLog(), entry);
 
         disk.zookeeper()->create(disk.nodes.log_item, entry, pers_seq);
     }
@@ -218,20 +221,43 @@ void DiskObjectStorageVFSTransaction::copyFile(
 //  when the corresponding transaction commits.
 void DiskObjectStorageVFSTransaction::addStoredObjectsOp(StoredObjects && link, StoredObjects && unlink)
 {
+    LOG_TRACE(disk.log, "{}", __PRETTY_FUNCTION__);
     if (link.empty() && unlink.empty()) [[unlikely]]
         return;
 
-    LOG_TRACE(disk.log, "Pushing:\nlink:{}\nunlink:{}", fmt::join(link, "\n"), fmt::join(unlink, "\n"));
-    String entry = VFSLogItem::getSerialised(std::move(link), std::move(unlink));
+    log_item.merge(std::move(link), std::move(unlink));
+    LOG_TRACE(disk.log, "mkmkme: Merged: {}", log_item.serialize());
+
+    // LOG_TRACE(disk.log, "Pushing:\nlink:{}\nunlink:{}", fmt::join(link, "\n"), fmt::join(unlink, "\n"));
+    // // String entry = VFSLogItem::getSerialised(std::move(link), std::move(unlink));
+    // String entry = log_item.serialize();
+
+    // auto callback = [entry_captured = std::move(entry), &disk_captured = disk]
+    // {
+    //     LOG_TRACE(disk_captured.log, "Executing(the other one) {}", entry_captured);
+    //     disk_captured.zookeeper()->create(disk_captured.nodes.log_item, entry_captured, pers_seq);
+    // };
+
+    // operations_to_execute.emplace_back(
+    //     std::make_unique<CallbackOperation<decltype(callback)>>(object_storage, metadata_storage, std::move(callback)));
+}
+
+void DiskObjectStorageVFSTransaction::commit()
+{
+    LOG_TRACE(disk.log, "{}", __PRETTY_FUNCTION__);
+    String entry = log_item.serialize();
+    LOG_TRACE(disk.log, "Executing(commit) {}", entry);
 
     auto callback = [entry_captured = std::move(entry), &disk_captured = disk]
     {
-        LOG_TRACE(disk_captured.log, "Executing {}", entry_captured);
+        LOG_TRACE(disk_captured.log, "Executing(the other one) {}", entry_captured);
         disk_captured.zookeeper()->create(disk_captured.nodes.log_item, entry_captured, pers_seq);
     };
 
     operations_to_execute.emplace_back(
         std::make_unique<CallbackOperation<decltype(callback)>>(object_storage, metadata_storage, std::move(callback)));
+
+    DiskObjectStorageTransaction::commit();
 }
 
 MultipleDisksObjectStorageVFSTransaction::MultipleDisksObjectStorageVFSTransaction(

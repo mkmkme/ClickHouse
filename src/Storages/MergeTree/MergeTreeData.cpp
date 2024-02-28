@@ -79,6 +79,7 @@
 #include <Common/quoteString.h>
 #include <Common/scope_guard_safe.h>
 #include <Common/typeid_cast.h>
+#include "Disks/ObjectStorages/DiskVFSTransactionGroupGuard.h"
 
 #include <boost/range/algorithm_ext/erase.hpp>
 #include <boost/algorithm/string/join.hpp>
@@ -7640,9 +7641,17 @@ MergeTreeData::CurrentlyMovingPartsTaggerPtr MergeTreeData::checkPartsForMove(co
     return std::make_shared<CurrentlyMovingPartsTagger>(std::move(parts_to_move), *this);
 }
 
+// TODO mkmkme guard
 MovePartsOutcome MergeTreeData::moveParts(const CurrentlyMovingPartsTaggerPtr & moving_tagger, const ReadSettings & read_settings, const WriteSettings & write_settings, bool wait_for_move_if_zero_copy)
 {
     LOG_INFO(log, "Got {} parts to move.", moving_tagger->parts_to_move.size());
+
+    // FIXME: (mkmkme) We need to create a guard for the transaction group before
+    // the loop. However, DiskPtr is available only in MergeTreeMoveEntry, i.e.
+    // each of moving_tagger->parts_to_move.
+    // Can we pass DiskPtr here? Or can parts_to_move have different DiskPtrs?
+    // If so, should we create _many_ guards?
+    // DiskVFSTransactionGroupGuard transaction_group_guard {};
 
     const auto settings = getSettings();
 

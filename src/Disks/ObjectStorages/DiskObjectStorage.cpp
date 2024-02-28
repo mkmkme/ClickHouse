@@ -41,6 +41,7 @@ ObjectStoragePtr DiskObjectStorage::getObjectStorage()
 
 DiskTransactionPtr DiskObjectStorage::createObjectStorageTransaction()
 {
+    // FIXME: (mkmkme) DiskObjectStorage to contain DiskVFSTransactionGroupGuard ref ?
     return std::make_shared<DiskObjectStorageTransaction>(
         *object_storage,
         *metadata_storage,

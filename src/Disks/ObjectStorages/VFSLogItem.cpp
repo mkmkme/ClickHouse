@@ -63,6 +63,15 @@ void VFSLogItem::merge(VFSLogItem && other)
             it->second += elem.second;
 }
 
+void VFSLogItem::merge(StoredObjects && link, StoredObjects && unlink)
+{
+    reserve(size() + link.size() + unlink.size());
+    for (auto & obj : link)
+        emplace(obj.remote_path, 1);
+    for (auto & obj : unlink)
+        emplace(obj.remote_path, -1);
+}
+
 VFSMergeResult VFSLogItem::mergeWithSnapshot(ReadBuffer & snapshot, WriteBuffer & new_snapshot, Poco::Logger * log) &&
 {
     // TODO myrrc this algo is ugly

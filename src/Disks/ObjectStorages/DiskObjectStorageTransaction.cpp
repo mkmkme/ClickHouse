@@ -563,6 +563,7 @@ void MultipleDisksObjectStorageTransaction::copyFile(
 
 void DiskObjectStorageTransaction::commit()
 {
+    LOG_TRACE(getLogger("DiskObjectStorageTransaction"), "{}", __PRETTY_FUNCTION__);
     for (size_t i = 0; i < operations_to_execute.size(); ++i)
     {
         try
