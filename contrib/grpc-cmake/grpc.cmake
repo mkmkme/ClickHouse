@@ -1829,26 +1829,30 @@ target_link_libraries(grpc_plugin_support
   ${_gRPC_PROTOBUF_PROTOC_LIBRARIES}
 )
 
+if (NOT GRPC_CPP_PLUGIN_PATH)
+  add_executable(grpc_cpp_plugin
+    ${_gRPC_SOURCE_DIR}/src/compiler/cpp_plugin.cc
+  )
+  target_compile_features(grpc_cpp_plugin PUBLIC cxx_std_14)
+  target_include_directories(grpc_cpp_plugin
+    PRIVATE
+      ${_gRPC_SOURCE_DIR}
+      ${_gRPC_SOURCE_DIR}/include
+      ${_gRPC_ADDRESS_SORTING_INCLUDE_DIR}
+      ${_gRPC_RE2_INCLUDE_DIR}
+      ${_gRPC_SSL_INCLUDE_DIR}
+      ${_gRPC_UPB_GENERATED_DIR}
+      ${_gRPC_UPB_GRPC_GENERATED_DIR}
+      ${_gRPC_UPB_INCLUDE_DIR}
+      ${_gRPC_XXHASH_INCLUDE_DIR}
+      ${_gRPC_ZLIB_INCLUDE_DIR}
+  )
 
-add_executable(grpc_cpp_plugin
-  ${_gRPC_SOURCE_DIR}/src/compiler/cpp_plugin.cc
-)
-target_compile_features(grpc_cpp_plugin PUBLIC cxx_std_14)
-target_include_directories(grpc_cpp_plugin
-  PRIVATE
-    ${_gRPC_SOURCE_DIR}
-    ${_gRPC_SOURCE_DIR}/include
-    ${_gRPC_ADDRESS_SORTING_INCLUDE_DIR}
-    ${_gRPC_RE2_INCLUDE_DIR}
-    ${_gRPC_SSL_INCLUDE_DIR}
-    ${_gRPC_UPB_GENERATED_DIR}
-    ${_gRPC_UPB_GRPC_GENERATED_DIR}
-    ${_gRPC_UPB_INCLUDE_DIR}
-    ${_gRPC_XXHASH_INCLUDE_DIR}
-    ${_gRPC_ZLIB_INCLUDE_DIR}
-)
-
-target_link_libraries(grpc_cpp_plugin
-  ${_gRPC_ALLTARGETS_LIBRARIES}
-  grpc_plugin_support
-)
+  target_link_libraries(grpc_cpp_plugin
+    ${_gRPC_ALLTARGETS_LIBRARIES}
+    grpc_plugin_support
+  )
+else ()
+  add_executable(grpc_cpp_plugin IMPORTED GLOBAL)
+  set_target_properties(grpc_cpp_plugin PROPERTIES IMPORTED_LOCATION ${GRPC_CPP_PLUGIN_PATH})
+endif ()

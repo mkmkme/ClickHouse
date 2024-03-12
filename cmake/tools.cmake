@@ -141,6 +141,26 @@ else ()
     message (FATAL_ERROR "Cannot find strip.")
 endif ()
 
+# Protoc
+
+option(PROTOC_PATH "Path to prebuilt protoc")
+if (PROTOC_PATH)
+    message(STATUS "Using protoc: ${PROTOC_PATH}")
+endif ()
+
+# gRPC C++ plugin
+option(GRPC_CPP_PLUGIN_PATH "Path to prebuilt grpc_cpp_plugin")
+if (GRPC_CPP_PLUGIN_PATH)
+    message(STATUS "Using grpc_cpp_plugin: ${GRPC_CPP_PLUGIN_PATH}")
+endif ()
+
+# llvm-tblgen
+
+option(LLVM_TBLGEN_PATH "Path to prebuilt llvm-tblgen")
+if (LLVM_TBLGEN_PATH)
+    message(STATUS "Using llvm-tblgen: ${LLVM_TBLGEN_PATH}")
+endif ()
+
 if (OS_DARWIN AND NOT CMAKE_TOOLCHAIN_FILE)
     # utils/list-licenses/list-licenses.sh (which generates system table system.licenses) needs the GNU versions of find and grep. These are
     # not available out-of-the-box on Mac. As a special case, Darwin builds in CI are cross-compiled from x86 Linux where the GNU userland is
