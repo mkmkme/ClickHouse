@@ -286,8 +286,15 @@ void checkAccessRightsForSelect(
     const StorageMetadataPtr & table_metadata,
     const TreeRewriterResult & syntax_analyzer_result)
 {
+    std::cerr << "MKMKME checkAccessRightsForSelect" << std::endl;
+    std::cerr << "      has_explicit_columns: " << syntax_analyzer_result.has_explicit_columns << std::endl;
+    std::cerr << "      table_metadata: " << table_metadata << std::endl;
+    std::cerr << "      table_metadata->getColumns().empty(): " << table_metadata->getColumns().empty() << std::endl;
+    std::cerr << "      required_source_columns" << syntax_analyzer_result.required_source_columns.toString() << std::endl;
     if (!syntax_analyzer_result.has_explicit_columns && table_metadata && !table_metadata->getColumns().empty())
     {
+        std::cerr << "MKMKME Checking access rights for table " << table_id.getFullTableName() << std::endl;
+        std::cerr << "MKMKME table_metadata->getColumns()" << table_metadata->getColumns().toString() << std::endl;
         /// For a trivial query like "SELECT count() FROM table" access is granted if at least
         /// one column is accessible.
         /// In this case just checking access for `required_columns` doesn't work correctly

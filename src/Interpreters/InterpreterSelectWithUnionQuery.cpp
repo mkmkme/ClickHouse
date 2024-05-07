@@ -65,6 +65,10 @@ InterpreterSelectWithUnionQuery::InterpreterSelectWithUnionQuery(
     nested_interpreters.reserve(num_children);
     std::vector<Names> required_result_column_names_for_other_selects(num_children);
 
+    std::cerr << "MKMKME::InterpreterSelectWithUnionQuery::InterpreterSelectWithUnionQuery" << std::endl;
+    std::cerr << "    num_children: " << num_children << std::endl;
+    std::cerr << "    require_full_header: " << require_full_header << std::endl;
+    std::cerr << "    required_result_column_names_size:" << required_result_column_names.size() << std::endl;
     if (!require_full_header && !required_result_column_names.empty() && num_children > 1)
     {
         /// Result header if there are no filtering by 'required_result_column_names'.
@@ -93,8 +97,12 @@ InterpreterSelectWithUnionQuery::InterpreterSelectWithUnionQuery(
         }
     }
 
+    std::cerr << "MKMKME::InterpreterSelectWithUnionQuery::InterpreterSelectWithUnionQuery (cont'd)" << std::endl;
+    std::cerr << "    settings_limit_offset_needed: " << settings_limit_offset_needed << std::endl;
+    std::cerr << "    options.settings_limit_offset_done: " << options.settings_limit_offset_done << std::endl;
     if (num_children == 1 && settings_limit_offset_needed && !options.settings_limit_offset_done)
     {
+        std::cerr << "    OVER HERE\n";
         const ASTPtr first_select_ast = ast->list_of_selects->children.at(0);
         ASTSelectQuery * select_query = dynamic_cast<ASTSelectQuery *>(first_select_ast.get());
         if (!select_query)
@@ -148,6 +156,9 @@ InterpreterSelectWithUnionQuery::InterpreterSelectWithUnionQuery(
     {
         const Names & current_required_result_column_names
             = query_num == 0 ? required_result_column_names : required_result_column_names_for_other_selects[query_num];
+
+        std::cerr << "    query_num: " << query_num << std::endl;
+        std::cerr << "    current_required_result_column_names_size: " << current_required_result_column_names.size() << std::endl;
 
         nested_interpreters.emplace_back(
             buildCurrentChildInterpreter(ast->list_of_selects->children.at(query_num), require_full_header ? Names() : current_required_result_column_names));
