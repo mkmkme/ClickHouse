@@ -46,7 +46,8 @@ PrewhereInfoPtr PrewhereInfo::clone() const
     if (row_level_filter)
         prewhere_info->row_level_filter = row_level_filter->clone();
 
-    prewhere_info->prewhere_actions = prewhere_actions.clone();
+    if (prewhere_actions)
+        prewhere_info->prewhere_actions = prewhere_actions->clone();
 
     prewhere_info->row_level_column_name = row_level_column_name;
     prewhere_info->prewhere_column_name = prewhere_column_name;

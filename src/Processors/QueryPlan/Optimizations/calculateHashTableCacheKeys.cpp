@@ -41,7 +41,8 @@ UInt64 calculateHashFromStep(const SourceStepWithFilter & read)
         table_name = storage_id.getFullTableName();
     }
     if (const auto & dag = read.getPrewhereInfo())
-        dag->prewhere_actions.updateHash(hash);
+        if (dag->prewhere_actions)
+            dag->prewhere_actions->updateHash(hash);
     return hash.get64();
 }
 
