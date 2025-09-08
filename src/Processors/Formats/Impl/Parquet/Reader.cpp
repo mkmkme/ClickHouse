@@ -618,13 +618,16 @@ void Reader::preparePrewhere()
                 .result_column_name = prewhere_info->row_level_column_name
             });
     }
-    ExpressionActions actions(prewhere_info->prewhere_actions.clone(), actions_settings);
-    prewhere_steps.push_back(PrewhereStep
-        {
-            .actions = std::move(actions),
-            .result_column_name = prewhere_info->prewhere_column_name,
-            .need_filter = prewhere_info->need_filter,
-        });
+    if (prewhere_info->prewhere_actions.has_value())
+    {
+        ExpressionActions actions(prewhere_info->prewhere_actions->clone(), actions_settings);
+        prewhere_steps.push_back(PrewhereStep
+            {
+                .actions = std::move(actions),
+                .result_column_name = prewhere_info->prewhere_column_name,
+                .need_filter = prewhere_info->need_filter,
+            });
+    }
     if (!prewhere_info->remove_prewhere_column)
         prewhere_steps.back().idx_in_output_block = sample_block->getPositionByName(prewhere_info->prewhere_column_name);
 

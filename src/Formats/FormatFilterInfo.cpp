@@ -85,7 +85,8 @@ void FormatFilterInfo::initKeyCondition(const Block & keys)
         };
         if (prewhere_info->row_level_filter.has_value())
             add_columns(prewhere_info->row_level_filter.value());
-        add_columns(prewhere_info->prewhere_actions);
+        if (prewhere_info->prewhere_actions.has_value())
+            add_columns(prewhere_info->prewhere_actions.value());
     }
 
     ColumnsWithTypeAndName columns = keys.getColumnsWithTypeAndName();

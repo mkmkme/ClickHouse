@@ -63,7 +63,8 @@ void PrewhereInfo::serialize(IQueryPlanStep::Serialization & ctx) const
     writeBinary(row_level_filter.has_value(), ctx.out);
     if (row_level_filter.has_value())
         row_level_filter->serialize(ctx.out, ctx.registry);
-    prewhere_actions.serialize(ctx.out, ctx.registry);
+    if (prewhere_actions.has_value())
+        prewhere_actions->serialize(ctx.out, ctx.registry);
     writeStringBinary(row_level_column_name, ctx.out);
     writeStringBinary(prewhere_column_name, ctx.out);
     writeBinary(remove_prewhere_column, ctx.out);
