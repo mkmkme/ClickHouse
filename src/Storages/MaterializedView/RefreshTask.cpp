@@ -23,6 +23,7 @@
 #include <Common/CurrentMetrics.h>
 #include <Common/FailPoint.h>
 #include <Common/Macros.h>
+#include <Common/ZooKeeper/KeeperFeatureFlags.h>
 #include <Common/ZooKeeper/ZooKeeper.h>
 #include <Common/thread_local_rng.h>
 
@@ -82,7 +83,7 @@ extern const char refresh_task_stop_racing_for_running_refresh[];
 }
 
 RefreshTask::RefreshTask(
-    StorageMaterializedView * view_, ContextPtr context, const DB::ASTRefreshStrategy & strategy, bool attach, bool coordinated, bool empty, bool is_restore_from_backup)
+    StorageMaterializedView * view_, ContextPtr context, const DB::ASTRefreshStrategy & strategy, bool /* attach */, bool coordinated, bool empty, bool is_restore_from_backup)
     : log(getLogger("RefreshTask"))
     , view(view_)
     , refresh_schedule(strategy)
@@ -113,14 +114,15 @@ RefreshTask::RefreshTask(
         /// currently both DatabaseReplicated and DatabaseShared seem to require this behavior.
         if (!replica_path_existed)
         {
-            if (!attach && !is_restore_from_backup &&
-                !zookeeper->isFeatureEnabled(KeeperFeatureFlag::MULTI_READ))
-                throw Exception(ErrorCodes::NOT_IMPLEMENTED, "Keeper server doesn't support multi-reads.");
-
+            // if (!attach && !is_restore_from_backup &&
+            //     !zookeeper->isFeatureEnabled(KeeperFeatureFlag::MULTI_READ))
+            //     throw Exception(ErrorCodes::NOT_IMPLEMENTED, "Keeper server doesn't support multi-reads.");
+            //
+            const bool use_ch_keeper_create = zookeeper->isFeatureEnabled(KeeperFeatureFlag::MULTI_READ);
             zookeeper->createAncestors(coordination.path);
             Coordination::Requests ops;
-            ops.emplace_back(zkutil::makeCreateRequest(coordination.path, coordination.root_znode.toString(), zkutil::CreateMode::Persistent, /*ignore_if_exists*/ true));
-            ops.emplace_back(zkutil::makeCreateRequest(coordination.path + "/replicas", "", zkutil::CreateMode::Persistent, true));
+            ops.emplace_back(zkutil::makeCreateRequest(coordination.path, coordination.root_znode.toString(), zkutil::CreateMode::Persistent, /*ignore_if_exists*/ use_ch_keeper_create));
+            ops.emplace_back(zkutil::makeCreateRequest(coordination.path + "/replicas", "", zkutil::CreateMode::Persistent, use_ch_keeper_create));
             ops.emplace_back(zkutil::makeCreateRequest(replica_path, "", zkutil::CreateMode::Persistent));
 
             /// When restoring multiple tables from backup (e.g. a RESTORE DATABASE), the restored
@@ -139,6 +141,7 @@ RefreshTask::RefreshTask(
                 ops.emplace_back(zkutil::makeCreateRequest(coordination.path + "/paused", "restored from backup", zkutil::CreateMode::Persistent, /*ignore_if_exists*/ true));
 
             zookeeper->multi(ops);
+
         }
 
         if (server_settings[ServerSetting::disable_insertion_and_mutation])
@@ -946,8 +949,8 @@ void RefreshTask::readZnodesIfNeeded(std::shared_ptr<zkutil::ZooKeeper> zookeepe
 
     lock.unlock();
 
-    if (!zookeeper->isFeatureEnabled(KeeperFeatureFlag::MULTI_READ))
-        throw Exception(ErrorCodes::NOT_IMPLEMENTED, "Keeper server doesn't support multi-reads. Refreshable materialized views won't work.");
+    // if (!zookeeper->isFeatureEnabled(KeeperFeatureFlag::MULTI_READ))
+        // throw Exception(ErrorCodes::NOT_IMPLEMENTED, "Keeper server doesn't support multi-reads. Refreshable materialized views won't work.");
 
     /// Set watches. (This is a lot of code, is there a better way?)
     if (!coordination.watches->root_watch_active.load())
