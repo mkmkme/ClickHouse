@@ -1,4 +1,5 @@
 #include <Functions/FunctionsAES.h>
+#include <Functions/FunctionsAES_Optimized.h>
 #include <Interpreters/Context.h>
 #include <Common/OpenSSLHelpers.h>
 
@@ -44,7 +45,8 @@ const EVP_CIPHER * getCipherByName(std::string_view cipher_name)
     // causes data race, so we stick to the slower but safer alternative here.
 
     /// We need zero-terminated string here:
-    return EVP_get_cipherbyname(std::string{cipher_name}.c_str());
+    // return EVP_get_cipherbyname(std::string{cipher_name}.c_str());
+    return OpenSSLOptimized::getCipherByNameFast(cipher_name);
 }
 
 }
